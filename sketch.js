@@ -7,16 +7,15 @@ let pet = {
 
 let foodItems = [];
 let petX, petY, petSize;
-let isPlaying = false;
-let playCounter = 0;
-
-let playButton, restButton;
+let leash, pillow;
 
 function preload() {
-  // food images
+  // Load images
   appleImg = loadImage("apple.png");
   burgerImg = loadImage("burger.png");
- backgroundImg = loadImage("background.jpg"); // Replace with your image file
+  leashImg = loadImage("leash.png"); 
+  pillowImg = loadImage("pillow.png"); 
+  backgroundImg = loadImage("background.jpg"); 
 }
 
 function setup() {
@@ -31,16 +30,9 @@ function setup() {
   foodItems.push(new Food(100, 450, appleImg, 10));
   foodItems.push(new Food(200, 450, burgerImg, 20));
 
-  // Buttons
-  playButton = createButton("play");
-  playButton.position(850, 200);
-  styleButton(playButton, "#2ecc71");
-  playButton.mousePressed(startPlay);
-
-  restButton = createButton("rest");
-  restButton.position(850, 300);
-  styleButton(restButton, "#3498db");
-  restButton.mousePressed(() => boostEnergy());
+  // Draggable objects (leash and pillow)
+  leash = new DraggableObject(50, 50, leashImg, "leash");
+  pillow = new DraggableObject(150, 50, pillowImg, "pillow");
 }
 
 function draw() {
@@ -49,22 +41,19 @@ function draw() {
 
   if (pet.isAlive) {
     drawPet();
-    drawStatsPanel();
     decreaseStats();
     drawFoods();
-
-    if (isPlaying) {
-      displayPlayInstructions();
-    }
+    leash.display();
+    pillow.display();
+    leash.drag();
+    pillow.drag();
   } else {
     gameOver();
   }
 }
 
 function drawBackground() {
-  
   image(backgroundImg, 0, 0, width, height);
-
 }
 
 function drawPet() {
@@ -88,38 +77,6 @@ function drawPet() {
   } else {
     arc(petX, petY + 50, 80, 40, PI, TWO_PI); // sad
   }
-
-  // reaction animations
-  if (isPlaying || frameCount % 60 < 10) {
-    noFill();
-    stroke(255, 204, 0, 150);
-    ellipse(petX, petY, petSize + 10);
-  }
-}
-
-function drawStatsPanel() {
-  fill(255);
-  noStroke();
-  rect(50, 50, 400, 150, 20);
-
-  fill(0);
-  textSize(20);
-  textAlign(LEFT, CENTER);
-  text("tummy", 70, 80);
-  text("happiness", 70, 120);
-  text("energy", 70, 160);
-
-  // hunger bar
-  fill(255, 80, 80);
-  rect(200, 70, pet.hunger * 2, 20, 5);
-
-  // happiness bar
-  fill(80, 255, 80);
-  rect(200, 110, pet.happiness * 2, 20, 5);
-
-  // energy bar
-  fill(80, 80, 255);
-  rect(200, 150, pet.energy * 2, 20, 5);
 }
 
 function drawFoods() {
@@ -134,7 +91,7 @@ function drawFoods() {
 }
 
 function decreaseStats() {
-  if (!isPlaying && frameCount % 20 === 0) {
+  if (frameCount % 20 === 0) {
     pet.hunger = max(0, pet.hunger - 1);
     pet.happiness = max(0, pet.happiness - 1);
     pet.energy = max(0, pet.energy - 1);
@@ -145,37 +102,14 @@ function decreaseStats() {
   }
 }
 
-function startPlay() {
-  if (!isPlaying) {
-    isPlaying = true;
-    playCounter = 0;
-    setTimeout(endPlay, 1000);
-  }
-}
-
-function endPlay() {
-  isPlaying = false;
-  pet.happiness = min(100, pet.happiness + playCounter*4);
-}
-
-function displayPlayInstructions() {
-  fill(0);
-  textSize(18);
-  textAlign(CENTER, CENTER);
-  text("Press SPACE rapidly to play with your pet!", width / 2, height - 160);
-}
-
 function gameOver() {
   background(220, 20, 60);
   fill(255);
   textSize(32);
   textAlign(CENTER, CENTER);
   text("Game Over\nYour pet died and it's your fault :(", width / 2, height / 2);
-
-  // Hide the buttons
-  playButton.hide();
-  restButton.hide();
 }
+
 function boostEnergy() {
   pet.energy = min(100, pet.energy + 20);
 }
@@ -228,33 +162,68 @@ class Food {
   }
 }
 
+class DraggableObject {
+  constructor(x, y, img, type) {
+    this.x = x;
+    this.y = y;
+    this.img = img;
+    this.type = type;
+    this.dragging = false;
+    this.offsetX = 0;
+    this.offsetY = 0;
+  }
+
+  display() {
+    image(this.img, this.x, this.y, 50, 50);
+  }
+
+  drag() {
+    if (this.dragging) {
+      this.x = mouseX + this.offsetX;
+      this.y = mouseY + this.offsetY;
+
+      // leash or pillow is dragged onto the pet
+      if (this.isOverPet(petX, petY, petSize)) {
+        if (this.type === "pillow") {
+          pet.energy = min(100, pet.energy + 10); // boost energy with the pillow
+        } else if (this.type === "leash") {
+          pet.happiness = min(100, pet.happiness + 10); // boost happiness with the leash
+        }
+      }
+    }
+  }
+
+  mousePressed() {
+    if (mouseX > this.x && mouseX < this.x + 50 && mouseY > this.y && mouseY < this.y + 50) {
+      this.dragging = true;
+      this.offsetX = this.x - mouseX;
+      this.offsetY = this.y - mouseY;
+    }
+  }
+
+  mouseReleased() {
+    this.dragging = false;
+  }
+
+  isOverPet(px, py, pSize) {
+    let d = dist(this.x + 25, this.y + 25, px, py);
+    return d < pSize / 2;
+  }
+}
+
 function mousePressed() {
+  // For food items and draggable objects
   for (let food of foodItems) {
     food.mousePressed();
   }
+  leash.mousePressed();
+  pillow.mousePressed();
 }
 
 function mouseReleased() {
   for (let food of foodItems) {
     food.mouseReleased();
   }
-}
-
-function keyPressed() {
-  if (isPlaying && keyCode === 32) {
-    playCounter++;
-  }
-}
-
-function styleButton(button, color) {
-  button.style("background-color", color);
-  button.style("color", "#fff");
-  button.style("font-size", "20px");
-  button.style("padding", "15px 30px");
-  button.style("border-radius", "15px");
-  button.style("border", "none");
-  button.style("box-shadow", "0px 4px 8px rgba(0, 0, 0, 0.2)");
-  button.style("cursor", "pointer");
-  button.mouseOver(() => button.style("box-shadow", "0px 6px 12px rgba(0, 0, 0, 0.4)"));
-  button.mouseOut(() => button.style("box-shadow", "0px 4px 8px rgba(0, 0, 0, 0.2)"));
+  leash.mouseReleased();
+  pillow.mouseReleased();
 }
