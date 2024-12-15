@@ -3,6 +3,7 @@ let pet = {
   happiness: 100,
   energy: 100,
   isAlive: true,
+  causeOfDeath: ''
 };
 
 let foodItems = [];
@@ -10,7 +11,7 @@ let petX, petY, petSize;
 let leash, pillow;
 
 function preload() {
-  // Load images
+  // images
   appleImg = loadImage("apple.png");
   burgerImg = loadImage("burger.png");
   leashImg = loadImage("leash.png"); 
@@ -32,7 +33,7 @@ function setup() {
 
   // Draggable objects (leash and pillow)
   leash = new DraggableObject(50, 50, leashImg, "leash");
-  pillow = new DraggableObject(150, 50, pillowImg, "pillow");
+  pillow = new DraggableObject(750, 50, pillowImg, "pillow");
 }
 
 function draw() {
@@ -96,7 +97,16 @@ function decreaseStats() {
     pet.happiness = max(0, pet.happiness - 1);
     pet.energy = max(0, pet.energy - 1);
 
-    if (pet.hunger === 0 || pet.happiness === 0 || pet.energy === 0) {
+    if (pet.hunger === 0 && pet.causeOfDeath === '') {
+      pet.causeOfDeath = 'hunger';
+      pet.isAlive = false;
+    }
+    if (pet.happiness === 0 && pet.causeOfDeath === '') {
+      pet.causeOfDeath = 'sadness';
+      pet.isAlive = false;
+    }
+    if (pet.energy === 0 && pet.causeOfDeath === '') {
+      pet.causeOfDeath = 'fatigue';
       pet.isAlive = false;
     }
   }
@@ -107,7 +117,7 @@ function gameOver() {
   fill(255);
   textSize(32);
   textAlign(CENTER, CENTER);
-  text("Game Over\nYour pet died and it's your fault :(", width / 2, height / 2);
+  text("Game Over\nYour pet died from " + pet.causeOfDeath + ".", width / 2, height / 2);
 }
 
 function boostEnergy() {
@@ -212,7 +222,7 @@ class DraggableObject {
 }
 
 function mousePressed() {
-  // For food items and draggable objects
+  // for food items and draggable objects
   for (let food of foodItems) {
     food.mousePressed();
   }
