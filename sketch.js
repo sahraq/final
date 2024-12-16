@@ -5,7 +5,9 @@ let pet = {
   isAlive: true,
   causeOfDeath: ''
 };
-
+let heartImg;
+let isSmiling = false; // flag to track if pet is smiling
+let hearts = []; //  hold heart images when pet smiles
 let foodItems = [];
 let petX, petY, petSize;
 let leash, pillow;
@@ -24,16 +26,19 @@ function preload() {
   
   hairImg = loadImage("hair.png");
   trampoline = loadImage("trampoline.png"); 
-   sadSong = loadSound("sad.mp3");
   weeSound=
 loadSound("wee.mp3");
 snoreSound= loadSound("snore.mp3");
   chompSound= loadSound ("chomp.mp3")
+  iceCreamImg= loadImage("iceCream.png")
+  graveyardImg = loadImage("graveyard.jpg");
+   heartImg = loadImage("heart.png");
+ 
 }
 
 function setup() {
   createCanvas(800, 600);
-
+ 
   petX = width / 2;
   petY = height / 2;
   petSize = 200;
@@ -41,11 +46,12 @@ function setup() {
   // food items
   foodItems.push(new Food(100, 450, appleImg, 10));
   foodItems.push(new Food(200, 450, burgerImg, 20));
+  foodItems.push(new Food(150, 450, iceCreamImg, 20));
 
   // clickable objects (leash and pillow)
-  leash = new ClickableObject(50, 50, leashImg, "leash");
-  pillow = new ClickableObject(750, 50, pillowImg, "pillow");
-  trampolineObject = new ClickableObject(width / 2 - 100, height / 2 + 150, trampoline, "trampoline");
+  leash = new ClickableObject(120, 150, leashImg, "leash");
+  pillow = new ClickableObject(600, 150, pillowImg, "pillow");
+  trampolineObject = new ClickableObject(width / 2 - 80, height / 2 + 50 , trampoline, "trampoline");
 }
 
 function draw() {
@@ -67,6 +73,11 @@ function draw() {
     
   } else {
     gameOver();
+  }
+   if (isSmiling) {
+    for (let i = 0; i < hearts.length; i++) {
+      image(heartImg, hearts[i].x, hearts[i].y, 50, 50);
+    }
   }
 
   // draw trampoline if outside and make pet jump
@@ -130,12 +141,20 @@ function drawPet() {
   } else if (pet.happiness > 60 && pet.energy > 60 && pet.hunger > 60) {
     // happy
     arc(petX, petY + 30 + petJumpY, 80, 40, 0, PI);
+    isSmiling = true; // Set the pet as smiling
   } else if (pet.happiness > 30 && pet.energy > 30 && pet.hunger > 30) {
     // neutral
+     isSmiling = false;
     line(petX - 20, petY + 30 + petJumpY, petX + 20, petY + 30 + petJumpY);
   } else {
     // sad
     arc(petX, petY + 50 + petJumpY, 80, 40, PI, TWO_PI);
+  }
+ if (isSmiling && frameCount % 10 === 0) { //fast heart creation
+    hearts.push({x: petX + random(-130, 50), y: petY + (-100, -150)});
+    if (hearts.length > 3) { // limit the number of hearts
+      hearts.shift(); // remove the old hearts
+    }
   }
 
   if (pet.happiness <50) {
@@ -163,6 +182,7 @@ function decreaseStats() {
     //increase energy while pet is in bed
     if (inBed) {
       pet.energy = min(100, pet.energy + 1); // 
+      pet.happiness = max(0, pet.happiness - 2.3); // decrease happiness faster when asleep
     } else {
       pet.energy = max(0, pet.energy - 1); // decrease energy outside the bed
     }
@@ -183,10 +203,11 @@ function decreaseStats() {
 
 function gameOver() {
   background(220, 20, 60);
-  fill(255);
+  image(graveyardImg, 0, 0, width, height);
+  fill(128);
   textSize(32);
   textAlign(CENTER, CENTER);
-  text("Game Over\nYour pet died from " + pet.causeOfDeath + ".", width / 2, height / 2);
+  text("Here lies your innocent, neglected pet\n who died from " + pet.causeOfDeath + ".", width / 2, height / 2);
   trampolineVisible = false;
 }
 
@@ -197,6 +218,7 @@ function animatePetJump() {
     if (petJumpY <= -50) {
       petJumping = false;
       petJumpY = 0;
+      pet.hunger = max(0, pet.hunger - 5); // increase hunger faster when jumping
     }
   }
 }
@@ -231,6 +253,8 @@ class Food {
       this.offsetX = this.x - mouseX;
       this.offsetY = this.y - mouseY;
       chompSound.play();
+        
+
     }
   }
 
@@ -259,23 +283,24 @@ class ClickableObject {
   }
 
   display() {
-    image(this.img, this.x, this.y, 50, 50);
+    image(this.img, this.x, this.y, 150, 150);
+    
   }
 
   mousePressed() {
-    if (mouseX > this.x && mouseX < this.x + 50 && mouseY > this.y && mouseY < this.y + 50) {
+    if (mouseX > this.x && mouseX < this.x + 150 && mouseY > this.y && mouseY < this.y + 150) {
       if (this.type === "pillow") {
         pet.energy = min(100, pet.energy + 10); // boost energy with the pillow
         snoreSound.play();
         inBed = true
         isOutside = false; // reset to the original background
-        trampolineVisible = false; // Make trampoline visible
+        trampolineVisible = false; // make trampoline invisible
          pet.eyesClosed = true; // close the eyes when the pillow is clicked
        
       } else if (this.type === "leash") {
         isOutside = true; // change background to outside
         inBed= false
-        trampolineVisible = true; // Make trampoline visible
+        trampolineVisible = true; // Mmke trampoline visible
          pet.eyesClosed = false; // reopen eyes
       } else if (this.type === "trampoline") {
         pet.happiness = min(100, pet.happiness + 10); 
