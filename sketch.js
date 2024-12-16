@@ -224,7 +224,8 @@ function animatePetJump() {
     if (petJumpY <= -50) {
       petJumping = false; // reset jump state
       petJumpY = 0; // reset jump height
-      pet.hunger = max(0, pet.hunger - 5); // decrease hunger stat (increase hunger technically) faster while jumping
+      pet.hunger = max(0, pet.hunger - 2); // decrease hunger stat (increase hunger technically) faster while jumping
+      pet.energy = max(0, pet.energy - 5); // decrease energy faster while jumping
     }
   }
 }
