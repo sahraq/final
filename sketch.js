@@ -180,7 +180,7 @@ function decreaseStats() {
 
     if (inBed) {
       pet.energy = min(100, pet.energy + 2); // increase energy while in bed
-      pet.happiness = max(0, pet.happiness - 0.8); // decrease happiness faster when asleep
+      pet.happiness = max(0, pet.happiness - 1); // decrease happiness faster when asleep
     } else {
       pet.energy = max(0, pet.energy - 1); // decrease energy when not in bed
     }
